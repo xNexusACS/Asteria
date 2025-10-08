@@ -20,6 +20,14 @@ public class TomlConfig<T> {
         return currentConfig;
     }
 
+    public TomlFile getTomlFile() {
+        try {
+            return TomlReflectionMapper.toTomlFile(currentConfig);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to convert currentConfig to TomlFile", e);
+        }
+    }
+
     public void setOnConfigReloaded(OnConfigReloaded<T> listener) {
         this.onConfigReloaded = listener;
     }

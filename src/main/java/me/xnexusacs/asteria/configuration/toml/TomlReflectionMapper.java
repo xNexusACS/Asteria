@@ -10,18 +10,31 @@ public class TomlReflectionMapper {
         for (Field field : obj.getClass().getDeclaredFields()) {
             field.setAccessible(true);
             Object value = field.get(obj);
-
             if (value == null) continue;
 
-            if (!isPrimitiveOrWrapper(value.getClass()) && !(value instanceof String)) {
-                TomlSection section = new TomlSection(field.getName());
-                for (Field subField : value.getClass().getDeclaredFields()) {
-                    subField.setAccessible(true);
-                    section.set(subField.getName(), subField.get(value));
-                }
-                file.addSection(section);
-            } else {
+            Class<?> fieldClass = value.getClass();
+            boolean isPrimitive = isPrimitiveOrWrapper(fieldClass) || value instanceof String;
+
+            if (isPrimitive) {
                 file.set(field.getName(), value);
+            } else {
+                String sectionName = fieldClass.isAnnotationPresent(TomlClassSection.class)
+                        ? fieldClass.getAnnotation(TomlClassSection.class).value()
+                        : field.isAnnotationPresent(TomlClassSection.class)
+                        ? field.getAnnotation(TomlClassSection.class).value()
+                        : field.getName();
+
+                TomlSection section = new TomlSection(sectionName);
+
+                for (Field subField : fieldClass.getDeclaredFields()) {
+                    subField.setAccessible(true);
+                    Object subVal = subField.get(value);
+                    if (subVal != null) {
+                        section.set(subField.getName(), subVal);
+                    }
+                }
+
+                file.addSection(section);
             }
         }
 
