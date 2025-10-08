@@ -8,6 +8,7 @@ public class AsteriaLogger<T> {
 
     private final String className;
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static AsteriaLogHandler handler;
 
     private final PrintStream out = new PrintStream(System.out) {
         @Override
@@ -28,10 +29,17 @@ public class AsteriaLogger<T> {
         String time = LocalDateTime.now().format(timeFormatter);
         String base = String.format("[%s] [%s] [%s] %s", time, className, level.getTag(), message);
 
-        out.println(base);
+        if (handler != null) {
+            handler.log(level, base, throwable);
+        } else {
+            PrintStream out = System.out;
+            if (base.startsWith("[STDOUT]:")) {
+                base = base.substring(9).trim();
+            }
+            out.println(base);
 
-        if (throwable != null) {
-            throwable.printStackTrace(out);
+            if (throwable != null)
+                throwable.printStackTrace(out);
         }
     }
 
@@ -72,5 +80,9 @@ public class AsteriaLogger<T> {
 
     public void verbose(String message) {
         log(LogLevel.STDOUT, message);
+    }
+
+    public static void setLogHandler(AsteriaLogHandler customHandler) {
+        handler = customHandler;
     }
 }
