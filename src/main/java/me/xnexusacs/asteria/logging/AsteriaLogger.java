@@ -1,5 +1,6 @@
 package me.xnexusacs.asteria.logging;
 
+import java.io.PrintStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -7,6 +8,17 @@ public class AsteriaLogger<T> {
 
     private final String className;
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private final PrintStream out = new PrintStream(System.out) {
+        @Override
+        public void println(String x) {
+            if (x != null && x.startsWith("[STDOUT]:")) {
+                x = x.substring(9).trim();
+            }
+            super.println(x);
+        }
+    };
+
 
     public AsteriaLogger(Class<T> clazz) {
         this.className = clazz.getSimpleName();
@@ -16,10 +28,10 @@ public class AsteriaLogger<T> {
         String time = LocalDateTime.now().format(timeFormatter);
         String base = String.format("[%s] [%s] [%s] %s", time, className, level.getTag(), message);
 
-        System.out.println(base);
+        out.println(base);
 
         if (throwable != null) {
-            throwable.printStackTrace(System.out);
+            throwable.printStackTrace(out);
         }
     }
 
