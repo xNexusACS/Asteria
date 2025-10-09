@@ -3,12 +3,15 @@ package me.xnexusacs.asteria.logging;
 import java.io.PrintStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class AsteriaLogger<T> {
 
     private final String className;
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-    private static AsteriaLogHandler handler;
+    private final List<AsteriaLogHandler> handlers = Collections.synchronizedList(new ArrayList<>());
 
     private final PrintStream out = new PrintStream(System.out) {
         @Override
@@ -20,7 +23,6 @@ public class AsteriaLogger<T> {
         }
     };
 
-
     public AsteriaLogger(Class<T> clazz) {
         this.className = clazz.getSimpleName();
     }
@@ -29,13 +31,21 @@ public class AsteriaLogger<T> {
         String time = LocalDateTime.now().format(timeFormatter);
         String base = String.format("[%s] [%s] [%s] %s", time, className, level.getTag(), message);
 
-        if (handler != null) {
-            handler.log(level, base, throwable);
-        } else {
-            PrintStream out = System.out;
-            if (base.startsWith("[STDOUT]:")) {
-                base = base.substring(9).trim();
+        boolean anyHandled = false;
+        synchronized (handlers) {
+            if (!handlers.isEmpty()) {
+                for (AsteriaLogHandler handler : handlers) {
+                    try {
+                        handler.log(level, base, throwable);
+                        anyHandled = true;
+                    } catch (Exception e) {
+                        System.err.println("[AsteriaLogger] Handler threw exception: " + e.getMessage());
+                    }
+                }
             }
+        }
+
+        if (!anyHandled && handlers.isEmpty()) {
             out.println(base);
 
             if (throwable != null)
@@ -82,7 +92,20 @@ public class AsteriaLogger<T> {
         log(LogLevel.STDOUT, message);
     }
 
-    public static void setLogHandler(AsteriaLogHandler customHandler) {
-        handler = customHandler;
+    public void addLogHandler(AsteriaLogHandler handler) {
+        if (handler != null && !handlers.contains(handler))
+            handlers.add(handler);
+    }
+
+    public void removeLogHandler(AsteriaLogHandler handler) {
+        handlers.remove(handler);
+    }
+
+    public void clearHandlers() {
+        handlers.clear();
+    }
+
+    public List<AsteriaLogHandler> getHandlers() {
+        return new ArrayList<>(handlers);
     }
 }
