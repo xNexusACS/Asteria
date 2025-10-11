@@ -18,10 +18,10 @@ public class TomlReflectionMapper {
             if (isPrimitive) {
                 file.set(field.getName(), value);
             } else {
-                String sectionName = fieldClass.isAnnotationPresent(TomlClassSection.class)
-                        ? fieldClass.getAnnotation(TomlClassSection.class).value()
-                        : field.isAnnotationPresent(TomlClassSection.class)
-                        ? field.getAnnotation(TomlClassSection.class).value()
+                String sectionName = fieldClass.isAnnotationPresent(TomlSectionDefinition.class)
+                        ? fieldClass.getAnnotation(TomlSectionDefinition.class).value()
+                        : field.isAnnotationPresent(TomlSectionDefinition.class)
+                        ? field.getAnnotation(TomlSectionDefinition.class).value()
                         : field.getName();
 
                 TomlSection section = new TomlSection(sectionName);
